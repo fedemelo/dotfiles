@@ -1,0 +1,24 @@
+onboarding = false
+
+[keys]
+prefix = "`"
+
+# Herdr binds a single key after the prefix, so the IDE shortcuts share this one and herdr-ide
+# reads the letter. prefix+prefix cannot be used: it types a literal backtick.
+[[keys.command]]
+key = "prefix+space"
+type = "popup"
+command = "~/.local/bin/herdr-ide"
+width = "90%"
+height = "90%"
+
+[theme]
+name = "terminal"
+auto_switch = false
+
+[ui]
+status_indicators = "symbols"
+tab_bar_right = [{ type = "command", command = "~/.local/bin/herdr-job-status", interval_seconds = 10, timeout_seconds = 5 }]
+
+[ui.toast]
+delivery = "system"
