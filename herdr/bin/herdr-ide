@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# A letter opens its viewer in a pane to the right of the focused pane; Shift+letter opens it
+# here, in the popup. Either way it starts in the focused pane's directory.
+set -euo pipefail
+# Herdr starts popups without the login shell's PATH.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# <key>|<label>|<command>|<whether it can open in a pane>
+entries=(
+  "f|Files|yazi|pane"
+  "m|Markdown|herdr-view markdown|pane"
+  "p|PDF|herdr-view pdf|pane"
+  "t|Tables|herdr-view table|pane"
+  "s|SQL|harlequin|pane"
+  "c|VS Code|code .|here"
+)
+
+read -r pane cwd < <(herdr pane list | jq -r '.result.panes[] | select(.focused) | "\(.pane_id) \(.foreground_cwd // .cwd)"' | head -1)
+[ -n "$pane" ] || exit 1
+cd "$cwd"
+
+for entry in "${entries[@]}"; do
+  IFS='|' read -r key label _ _ <<< "$entry"
+  printf '  %s  %s\n' "$key" "$label"
+done
+printf '\n  letter: pane on the right    Shift+letter: here    Esc: cancel\n'
+
+IFS= read -rsn1 pressed || exit 0
+lower="$(printf '%s' "$pressed" | tr '[:upper:]' '[:lower:]')"
+
+for entry in "${entries[@]}"; do
+  IFS='|' read -r key _ command where <<< "$entry"
+  [ "$key" = "$lower" ] || continue
+  if [ "$pressed" = "$lower" ] && [ "$where" = pane ]; then
+    new="$(herdr pane split "$pane" --direction right --ratio 0.5 --cwd "$cwd" --focus | jq -r '.result.pane.pane_id')"
+    # exec, so the pane closes when the viewer quits. With "<command>; exit", Ctrl+C aborted the
+    # whole line and left the pane open on an empty shell.
+    herdr pane run "$new" "exec $command"
+  else
+    # shellcheck disable=SC2086 # the command's arguments are split on purpose
+    exec $command
+  fi
+done
