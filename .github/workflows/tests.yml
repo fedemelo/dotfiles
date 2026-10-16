@@ -1,0 +1,29 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md']
+  pull_request:
+    paths-ignore: ['README.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    # macOS only: the install runs there, on its bash 3.2.
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run test suites
+        run: |
+          status=0
+          for suite in tests/*.test.sh; do
+            echo "::group::$suite"
+            "$suite" || status=1
+            echo "::endgroup::"
+          done
+          exit $status
