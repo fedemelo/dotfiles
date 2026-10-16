@@ -1,0 +1,23 @@
+# Enter uses the first opener; O picks another.
+# block = true hands the terminal to the program, and quitting it returns to yazi.
+
+[opener]
+pdf = [
+  { run = "herdr-view pdf %s1", desc = "tdf", block = true },
+  { run = "open %s", desc = "Preview" },
+]
+table = [
+  { run = "herdr-view table %s1", desc = "VisiData", block = true },
+  { run = "open %s", desc = "Default app" },
+]
+markdown = [
+  { run = "herdr-view markdown %s1", desc = "glow (e edits in micro)", block = true },
+  { run = "code %s", desc = "VS Code" },
+]
+
+[open]
+prepend_rules = [
+  { url = "*.pdf", use = [ "pdf", "reveal" ] },
+  { url = "*.{csv,tsv,parquet,xlsx,json,jsonl}", use = [ "table", "edit", "reveal" ] },
+  { url = "*.{md,markdown}", use = [ "markdown", "reveal" ] },
+]
