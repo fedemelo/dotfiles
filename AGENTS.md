@@ -1,20 +1,31 @@
 # dotfiles
 
-Implementation notes for agents working on this repo. `README.md` is for humans and stays short. This file covers how the repo is built, so you can work on it without reading every file.
+Notes for agents. `README.md` is for humans and stays short. This file says how to install the repo and how it's built, so you can work on it without reading every file.
+
+## Installing this repo
+
+When asked to install or set up this repo, do all three steps. The human install in the README is step 2 alone; you also go on to agent-config.
+
+1. In a devspaces pod (`/mnt/personal`, `/etc/claude-code` and a `devspaces` executable all present), skip to step 3. `install` refuses to run there.
+2. Clone this repo into `~/code/personal/dotfiles` if it isn't there, run `./install`, then install every program it reports as `Missing:` with the command it gives. Run `./install` again and confirm it reports nothing missing. If it stops at a repo or an installer, report its output and stop.
+3. Clone [agent-config](https://github.com/fedemelo/agent-config) into `~/code/personal/agent-config` if it isn't there. Then read its `skills/wire-up/SKILL.md` and follow it. That skill covers the rest: git-tools, the pod procedure, and the checks the installers leave to a human. Don't repeat any of it from here.
 
 ## Layout
 
-- `install`: the entry point. Installs each component in order.
+- `install`: the entry point for humans and agents. Installs each component in order.
+- `CLAUDE.md`: imports this file, since Claude Code reads `CLAUDE.md` and not `AGENTS.md`.
 - `lib/link.sh`: helpers that every component's `install.sh` sources: `link`, `link_bin`, `report_missing`.
 - `micro/`, `yazi/`, `herdr/`: one directory per local component, each with its own `install.sh`.
 - `tests/install.test.sh`, `tests/link.test.sh`: the suites. CI runs every `tests/*.test.sh` on macOS.
 
 ## install
 
-`components` in `install` lists every component in install order: `git-tools agent-config micro yazi herdr`. Each may depend on the ones before it. The skills in agent-config call flags that only a current `git-land` has, so git-tools goes first.
+`components` in `install` lists every component in install order: `git-tools micro yazi herdr`. Each may depend on the ones before it.
+
+agent-config is deliberately not a component. Its setup is an agent's job, through its `/wire-up` skill, and anyone using it has an agent. Keeping it out also keeps the dependencies one-way: dotfiles depends on git-tools and agent-config, agent-config depends on git-tools, and neither refers back to dotfiles. Don't add a reference to dotfiles in either repo. The only place that knows git-tools goes before agent-config is `/wire-up`.
 
 A component is one of two kinds:
-- **A separate repo**, listed in `separate_repos`: git-tools and agent-config. It's cloned into `~/code/personal/<name>` from `https://github.com/fedemelo/<name>` if missing, else updated, and then its own `install.sh` runs. These repos must keep working on their own, so nothing here may change them or assume they live inside dotfiles. Plain clones, never submodules or subtrees.
+- **A separate repo**, listed in `separate_repos`: git-tools. It's cloned into `~/code/personal/<name>` from `https://github.com/fedemelo/<name>` if missing, else updated, and then its own `install.sh` runs. Such a repo must keep working on its own, so nothing here may change them or assume they live inside dotfiles. Plain clones, never submodules or subtrees.
 - **A directory here**: everything else. Its `install.sh` runs; a component without one is skipped with a message.
 
 Updating a repo stops the whole run, leaving that repo untouched, when it has uncommitted changes, has no upstream, has commits its remote lacks, or can't fast-forward. Each means someone was working there, and pulling over that is not the script's decision. A failed installer also stops the run. Nothing after the stop is installed.
@@ -25,7 +36,7 @@ Updating a repo stops the whole run, leaving that repo untouched, when it has un
 
 ## Devspaces pods
 
-`install` refuses to run in a devspaces pod. It checks the same three signals as agent-config's `install.sh`: `/mnt/personal`, `/etc/claude-code` and a `devspaces` executable, all present. It checks first, because git-tools' installer runs before agent-config's gets to refuse, and it sets `core.hooksPath` globally, which conflicts with pod policy. The pod procedure is agent-config's `skills/wire-up/targets/devspaces.md`.
+`install` refuses to run in a devspaces pod. It checks the same three signals as agent-config's `install.sh`: `/mnt/personal`, `/etc/claude-code` and a `devspaces` executable, all present. git-tools' installer has no such check, and it sets `core.hooksPath` globally, which conflicts with pod policy. In a pod, agent-config's `/wire-up` sets up both tool repos its own way.
 
 The repo has no `install.sh` at its root on purpose. A pod runs the first of `install.sh`, `bootstrap.sh` or `setup.sh` it finds in `/mnt/personal/dotfiles/` at every start, and that is a different script.
 
