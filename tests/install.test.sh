@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Tests install against a sandboxed HOME and local stand-ins for the tool repos, so running these
 # never touches the real repos or anything they install. Each stand-in's install.sh only records
-# that it ran, in the order the components were installed.
+# that it ran, in the order the components were installed. install runs from a copy with no
+# component directories beside it, so the repo's own components are never installed from here.
 set -uo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -37,8 +38,10 @@ make_remotes() {
 # One sandbox per case: a HOME, a code directory, a log, and the share and managed directories
 # pointed somewhere that does not exist unless a case creates them.
 new_sandbox() {
-  installer="$repo_root/install"
   box="$(mktemp -d "$ROOT/box.XXXXXX")"
+  mkdir "$box/dotfiles"
+  cp "$repo_root/install" "$box/dotfiles/install"
+  installer="$box/dotfiles/install"
   remotes="$(make_remotes)"
   mkdir -p "$box/home"
   : > "$box/log"
@@ -59,7 +62,8 @@ out="$(run_install)"; status=$?
 check "exits 0" "$status" "0"
 check "git-tools then agent-config" "$(installed)" "git-tools agent-config"
 check "git-tools is cloned into the code directory" "$(test -d "$box/code/git-tools/.git" && echo yes)" "yes"
-check "herdr is skipped and says why" "$(echo "$out" | grep -c 'herdr/install.sh does not exist yet')" "1"
+check "a component without an installer is skipped, and says why" \
+  "$(echo "$out" | grep -c 'herdr/install.sh does not exist yet')" "1"
 
 echo "=== second run: pulls instead of cloning ==="
 upstream="$(mktemp -d "$ROOT/upstream.XXXXXX")"
@@ -129,12 +133,9 @@ check "agent-config is not installed" "$(installed)" ""
 
 echo "=== a local component with an installer is run ==="
 new_sandbox
-copy="$(mktemp -d "$ROOT/copy.XXXXXX")"
-cp "$repo_root/install" "$copy/install"
-mkdir "$copy/herdr"
-printf '#!/usr/bin/env bash\necho herdr >> "$INSTALL_LOG"\n' > "$copy/herdr/install.sh"
-chmod +x "$copy/herdr/install.sh"
-installer="$copy/install"
+mkdir "$box/dotfiles/herdr"
+printf '#!/usr/bin/env bash\necho herdr >> "$INSTALL_LOG"\n' > "$box/dotfiles/herdr/install.sh"
+chmod +x "$box/dotfiles/herdr/install.sh"
 run_install >/dev/null
 check "herdr runs last" "$(installed)" "git-tools agent-config herdr"
 
