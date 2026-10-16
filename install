@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: ./install [--only <component>]..." >&2
+  echo "Components, in install order: ${components[*]}" >&2
+  exit 2
+}
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+code_dir="${DOTFILES_CODE_DIR:-$HOME/code/personal}"
+remote_base="${DOTFILES_REMOTE_BASE:-https://github.com/fedemelo}"
+share_dir="${DOTFILES_SHARE_DIR:-/mnt/personal}"
+managed_dir="${DOTFILES_MANAGED_DIR:-/etc/claude-code}"
+
+# Install order: each component may depend on the ones before it. The skills in agent-config call
+# flags that only a current git-land has, so git-tools always goes first.
+components=(git-tools agent-config herdr)
+# Components that are repos of their own, cloned beside this one. The rest are directories here.
+separate_repos=(git-tools agent-config)
+
+# The same signals agent-config's install.sh checks. Checked here too, and first, because the
+# git-tools installer runs before agent-config's gets the chance to refuse, and it sets
+# core.hooksPath globally, which conflicts with pod policy.
+if [ -d "$share_dir" ] && [ -d "$managed_dir" ] && command -v devspaces >/dev/null 2>&1; then
+  echo "This is a devspaces pod, where these installers are the wrong tool: they symlink skills" >&2
+  echo "the runtime never loads there and write machine-wide config the pod does not own." >&2
+  echo "Run /wire-up instead (\$wire-up in Codex), which follows the pod's own procedure." >&2
+  exit 1
+fi
+
+contains() {
+  local wanted="$1" item
+  shift
+  for item in "$@"; do [ "$item" = "$wanted" ] && return 0; done
+  return 1
+}
+
+selected=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --only)
+      [ $# -ge 2 ] || usage
+      contains "$2" "${components[@]}" || { echo "Unknown component: $2" >&2; usage; }
+      selected+=("$2")
+      shift 2
+      ;;
+    *) usage ;;
+  esac
+done
+
+stop() {
+  echo "Stopped at $1: $2. Left it untouched; nothing after it was installed." >&2
+  exit 1
+}
+
+# A dirty tree or local commits mean someone was working in that repo, and getting a pull through
+# them is a decision that isn't this script's to make.
+update_repo() {
+  local name="$1" dir="$code_dir/$1"
+
+  if [ ! -e "$dir" ]; then
+    mkdir -p "$code_dir"
+    git clone "$remote_base/$name" "$dir"
+    return
+  fi
+  [ -d "$dir/.git" ] || stop "$name" "$dir exists but is not a git repo"
+  [ -z "$(git -C "$dir" status --porcelain)" ] || stop "$name" "$dir has uncommitted changes"
+  git -C "$dir" rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1 || stop "$name" "its branch has no upstream"
+  git -C "$dir" fetch --quiet
+  [ -z "$(git -C "$dir" rev-list '@{u}..HEAD')" ] || stop "$name" "it has commits that are not on its remote"
+  git -C "$dir" merge --ff-only --quiet '@{u}' || stop "$name" "it cannot fast-forward to its remote"
+}
+
+install_component() {
+  local name="$1" dir
+
+  if contains "$name" "${separate_repos[@]}"; then
+    update_repo "$name"
+    dir="$code_dir/$name"
+  else
+    dir="$repo_dir/$name"
+    if [ ! -f "$dir/install.sh" ]; then
+      echo "Skipped: $dir/install.sh does not exist yet"
+      return
+    fi
+  fi
+
+  "$dir/install.sh" || stop "$name" "its installer failed"
+}
+
+for name in "${components[@]}"; do
+  if [ ${#selected[@]} -gt 0 ] && ! contains "$name" "${selected[@]}"; then
+    continue
+  fi
+  echo "==> $name"
+  install_component "$name"
+done
