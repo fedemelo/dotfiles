@@ -15,7 +15,7 @@ managed_dir="${DOTFILES_MANAGED_DIR:-/etc/claude-code}"
 
 # Install order: each component may depend on the ones before it. The skills in agent-config call
 # flags that only a current git-land has, so git-tools always goes first.
-components=(git-tools agent-config herdr)
+components=(git-tools agent-config micro yazi herdr)
 # Components that are repos of their own, cloned beside this one. The rest are directories here.
 separate_repos=(git-tools agent-config)
 
