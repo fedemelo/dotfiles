@@ -13,19 +13,17 @@ remote_base="${DOTFILES_REMOTE_BASE:-https://github.com/fedemelo}"
 share_dir="${DOTFILES_SHARE_DIR:-/mnt/personal}"
 managed_dir="${DOTFILES_MANAGED_DIR:-/etc/claude-code}"
 
-# Install order: each component may depend on the ones before it. The skills in agent-config call
-# flags that only a current git-land has, so git-tools always goes first.
-components=(git-tools agent-config micro yazi herdr)
+# Install order: each component may depend on the ones before it.
+components=(git-tools micro yazi herdr)
 # Components that are repos of their own, cloned beside this one. The rest are directories here.
-separate_repos=(git-tools agent-config)
+separate_repos=(git-tools)
 
-# The same signals agent-config's install.sh checks. Checked here too, and first, because the
-# git-tools installer runs before agent-config's gets the chance to refuse, and it sets
-# core.hooksPath globally, which conflicts with pod policy.
+# The same signals agent-config's install.sh checks. The git-tools installer has no such check, and
+# it sets core.hooksPath globally, which conflicts with pod policy.
 if [ -d "$share_dir" ] && [ -d "$managed_dir" ] && command -v devspaces >/dev/null 2>&1; then
-  echo "This is a devspaces pod, where these installers are the wrong tool: they symlink skills" >&2
-  echo "the runtime never loads there and write machine-wide config the pod does not own." >&2
-  echo "Run /wire-up instead (\$wire-up in Codex), which follows the pod's own procedure." >&2
+  echo "This is a devspaces pod, where this installer is the wrong tool: it writes machine-wide" >&2
+  echo "config the pod does not own, such as a global core.hooksPath. To set up git-tools and" >&2
+  echo "agent-config here, run agent-config's /wire-up skill (\$wire-up in Codex)." >&2
   exit 1
 fi
 
