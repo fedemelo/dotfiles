@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Opens a file in the terminal viewer for its kind. Without a file, picks one from under the
+# current directory, newest first.
+#   herdr-view markdown|pdf|table [file]
+set -euo pipefail
+
+usage() { echo "Usage: herdr-view markdown|pdf|table [file]" >&2; exit 2; }
+
+pick() {
+  local name_tests=() pattern files
+  for pattern in "$@"; do name_tests+=(-o -name "$pattern"); done
+  files="$(find . \( -path '*/.*' -o -path '*/node_modules' \) -prune -o -type f \( "${name_tests[@]:1}" \) -print0 2>/dev/null \
+    | xargs -0 ls -t 2>/dev/null)" || true
+  if [ -z "$files" ]; then
+    # The pause keeps the message on screen before the popup or pane closes.
+    echo "No $* files under $PWD" >&2
+    sleep 2
+    exit 1
+  fi
+  printf '%s\n' "$files" | fzf --prompt="$kind> " --height=100%
+}
+
+# Rendered by glow into less rather than read in glow's own viewer, where the left arrow means
+# "back to the file list" and a wide table scrolled right can't be scrolled back.
+view_markdown() {
+  local keys status
+  keys="$(mktemp)"
+  trap 'rm -f "$keys"' EXIT
+  # "quit X" makes less exit with X's character code as its status.
+  printf '#command\ne quit e\nr quit r\n' > "$keys"
+  while true; do
+    status=0
+    glow -s dark -w $(( $(tput cols) - 2 )) "$1" | LESS='' less -RS --lesskey-src="$keys" || status=$?
+    case "$status" in
+      101) micro "$1" ;;
+      114) ;;
+      *) return 0 ;;
+    esac
+  done
+}
+
+kind="${1:-}"
+case "$kind" in
+  markdown) patterns=('*.md' '*.markdown') ;;
+  pdf) patterns=('*.pdf') ;;
+  table) patterns=('*.csv' '*.tsv' '*.parquet' '*.xlsx') ;;
+  *) usage ;;
+esac
+file="${2:-$(pick "${patterns[@]}")}" || exit 1
+
+case "$kind" in
+  markdown) view_markdown "$file" ;;
+  pdf) exec tdf "$file" ;;
+  # Multithreaded pyarrow can segfault on some parquet files.
+  table) OMP_NUM_THREADS=1 ARROW_NUM_THREADS=1 exec vd "$file" ;;
+esac
