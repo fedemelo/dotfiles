@@ -20,6 +20,10 @@ report_missing \
 less_major="$(less --version | awk 'NR == 1 { print int($2) }')"
 [ "$less_major" -ge 582 ] || echo "Missing: less 582 or later (brew install less)"
 
+# Herdr shows images, like tdf's PDF pages, only inside a terminal with Kitty graphics. macOS's
+# Terminal.app has none and prints them as garbage. The cask puts no ghostty command on PATH.
+[ -d /Applications/Ghostty.app ] || echo "Missing: Ghostty (brew install --cask ghostty), the terminal to run Herdr in"
+
 command -v herdr >/dev/null 2>&1 || exit 0
 herdr config check
 herdr server reload-config >/dev/null 2>&1 || echo "Herdr is not running; it reads the config when it starts"

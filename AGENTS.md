@@ -58,7 +58,7 @@ Links `yazi.toml` into `~/.config/yazi/`. Enter opens PDFs, tables (`csv tsv par
 
 ### herdr
 
-Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, then runs `herdr config check` and reloads the server.
+Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, then runs `herdr config check` and reloads the server. It reports Ghostty as missing when `/Applications/Ghostty.app` isn't there: Herdr must run inside a terminal with Kitty graphics to show images such as tdf's PDF pages, and macOS's Terminal.app has none.
 
 - `config.toml` owns the whole Herdr config, including the user's own settings (theme, toasts, status icons). Change them here.
 - The prefix is Herdr's default, `ctrl+b`. The one binding added is `prefix+space`, a popup running `herdr-open`.
