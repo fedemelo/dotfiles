@@ -50,7 +50,7 @@ The repo has no `install.sh` at its root on purpose. A pod runs the first of `in
 
 ### ghostty
 
-Links `config` (the `Retro Legends` theme) into `~/.config/ghostty/`. Ghostty also reads `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty`, after this one, so settings there win; on this machine that file is only Ghostty's commented template. It reports Ghostty as missing when `/Applications/Ghostty.app` isn't there: Herdr must run inside a terminal with Kitty graphics to show images such as tdf's PDF pages, and macOS's Terminal.app has none.
+Links `config` (the `Retro Legends` theme) into `~/.config/ghostty/`. In it, `ctrl+tab` and `ctrl+shift+tab` type Herdr's `prefix+n` and `prefix+p`, so Chrome's tab keys switch Herdr's tabs; Ghostty's own tabs, which those keys switched, go unused. Ghostty also reads `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty`, after this one, so settings there win; on this machine that file is only Ghostty's commented template. It reports Ghostty as missing when `/Applications/Ghostty.app` isn't there: Herdr must run inside a terminal with Kitty graphics to show images such as tdf's PDF pages, and macOS's Terminal.app has none.
 
 ### herdr
 

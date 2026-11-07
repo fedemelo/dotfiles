@@ -1,1 +1,6 @@
 theme = Retro Legends
+
+# Chrome's tab keys switch Herdr's tabs instead of Ghostty's, which go unused since everything
+# runs inside Herdr. \x02 is ctrl+b, Herdr's prefix, so these type prefix+n and prefix+p.
+keybind = ctrl+tab=text:\x02n
+keybind = ctrl+shift+tab=text:\x02p
