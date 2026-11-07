@@ -39,14 +39,14 @@ make_remote() {
 }
 
 # One sandbox per case: a HOME, a code directory, a log, and the share and managed directories
-# pointed somewhere that does not exist unless a case creates them. micro has an
+# pointed somewhere that does not exist unless a case creates them. ghostty has an
 # installer; herdr has none, unless a case adds one.
 new_sandbox() {
   box="$(mktemp -d "$ROOT/box.XXXXXX")"
   mkdir "$box/dotfiles"
   cp "$repo_root/install" "$box/dotfiles/install"
   installer="$box/dotfiles/install"
-  stand_in "$box/dotfiles/micro" micro
+  stand_in "$box/dotfiles/ghostty" ghostty
   remotes="$(make_remote)"
   mkdir -p "$box/home"
   : > "$box/log"
@@ -65,7 +65,7 @@ echo "=== fresh machine: clones git-tools, then runs every installer in order ==
 new_sandbox
 out="$(run_install)"; status=$?
 check "exits 0" "$status" "0"
-check "git-tools, then the local components" "$(installed)" "git-tools micro"
+check "git-tools, then the local components" "$(installed)" "git-tools ghostty"
 check "git-tools is cloned into the code directory" "$(test -d "$box/code/git-tools/.git" && echo yes)" "yes"
 check "a component without an installer is skipped, and says why" \
   "$(echo "$out" | grep -c 'herdr/install.sh does not exist yet')" "1"
@@ -81,19 +81,19 @@ git_quiet -C "$upstream" push -q origin main
 out="$(run_install)"; status=$?
 check "exits 0" "$status" "0"
 check "the new upstream commit is pulled" "$(test -f "$box/code/git-tools/new-file" && echo yes)" "yes"
-check "every installer runs again" "$(installed)" "git-tools micro"
+check "every installer runs again" "$(installed)" "git-tools ghostty"
 
 echo "=== --only installs just the named component ==="
 new_sandbox
-out="$(run_install --only micro)"; status=$?
+out="$(run_install --only ghostty)"; status=$?
 check "exits 0" "$status" "0"
-check "only micro runs" "$(installed)" "micro"
+check "only ghostty runs" "$(installed)" "ghostty"
 check "git-tools is not cloned" "$(test -e "$box/code/git-tools" && echo present || echo absent)" "absent"
 
 echo "=== --only keeps the install order, whatever order it is given in ==="
 new_sandbox
-run_install --only micro --only git-tools >/dev/null
-check "git-tools still goes first" "$(installed)" "git-tools micro"
+run_install --only ghostty --only git-tools >/dev/null
+check "git-tools still goes first" "$(installed)" "git-tools ghostty"
 
 echo "=== an unknown component is refused before anything runs ==="
 new_sandbox
@@ -140,7 +140,7 @@ echo "=== a local component with an installer is run ==="
 new_sandbox
 stand_in "$box/dotfiles/herdr" herdr
 run_install >/dev/null
-check "herdr runs last" "$(installed)" "git-tools micro herdr"
+check "herdr runs last" "$(installed)" "git-tools ghostty herdr"
 
 echo "=== a devspaces pod is refused before anything runs ==="
 new_sandbox
@@ -158,7 +158,7 @@ new_sandbox
 mkdir -p "$box/share"
 out="$(run_install)"; status=$?
 check "exits 0" "$status" "0"
-check "installs as usual" "$(installed)" "git-tools micro"
+check "installs as usual" "$(installed)" "git-tools ghostty"
 
 echo
 echo "$pass passed, $fail failed"

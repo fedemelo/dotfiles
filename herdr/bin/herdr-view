@@ -17,7 +17,7 @@ view_markdown() {
     status=0
     glow -s dark -w $(( $(tput cols) - 2 )) "$1" | LESS='' less -RS --lesskey-src="$keys" || status=$?
     case "$status" in
-      101) micro "$1" ;;
+      101) code --wait "$1" ;;
       114) ;;
       *) return 0 ;;
     esac
