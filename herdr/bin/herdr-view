@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Opens a file or directory in the terminal program for its kind.
-#   herdr-view <path>
+# Opens a file or directory in the program for its kind, or with --kind only names that kind.
+#   herdr-view [--kind] <path>
 set -euo pipefail
 
-[ $# -eq 1 ] || { echo "Usage: herdr-view <path>" >&2; exit 2; }
-path="$1"
+usage() { echo "Usage: herdr-view [--kind] <path>" >&2; exit 2; }
 
 # Rendered by glow into less rather than read in glow's own viewer, where the left arrow means
 # "back to the file list" and a wide table scrolled right can't be scrolled back.
@@ -25,13 +24,32 @@ view_markdown() {
   done
 }
 
-[ -d "$path" ] && exec yazi "$path"
+kind_of() {
+  if [ -d "$1" ]; then
+    echo directory
+    return
+  fi
+  case "$(printf '%s' "${1##*.}" | tr '[:upper:]' '[:lower:]')" in
+    md|markdown) echo markdown ;;
+    pdf) echo pdf ;;
+    csv|tsv|parquet|xlsx|json|jsonl) echo table ;;
+    *) echo editor ;;
+  esac
+}
 
-extension="$(printf '%s' "${path##*.}" | tr '[:upper:]' '[:lower:]')"
-case "$extension" in
-  md|markdown) view_markdown "$path" ;;
+if [ "${1:-}" = --kind ]; then
+  [ $# -eq 2 ] || usage
+  kind_of "$2"
+  exit 0
+fi
+[ $# -eq 1 ] || usage
+path="$1"
+
+case "$(kind_of "$path")" in
+  directory) exec yazi "$path" ;;
+  markdown) view_markdown "$path" ;;
   pdf) exec tdf "$path" ;;
   # Multithreaded pyarrow can segfault on some parquet files.
-  csv|tsv|parquet|xlsx|json|jsonl) OMP_NUM_THREADS=1 ARROW_NUM_THREADS=1 exec vd "$path" ;;
-  *) exec micro "$path" ;;
+  table) OMP_NUM_THREADS=1 ARROW_NUM_THREADS=1 exec vd "$path" ;;
+  editor) exec code "$path" ;;
 esac
