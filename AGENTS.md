@@ -15,12 +15,12 @@ When asked to install or set up this repo, do all three steps. The human install
 - `install`: the entry point for humans and agents. Installs each component in order.
 - `CLAUDE.md`: imports this file, since Claude Code reads `CLAUDE.md` and not `AGENTS.md`.
 - `lib/link.sh`: helpers that every component's `install.sh` sources: `link`, `link_bin`, `report_missing`.
-- `micro/`, `yazi/`, `herdr/`: one directory per local component, each with its own `install.sh`.
+- `micro/`, `yazi/`, `ghostty/`, `herdr/`: one directory per local component, each with its own `install.sh`.
 - `tests/install.test.sh`, `tests/link.test.sh`: the suites. CI runs every `tests/*.test.sh` on macOS.
 
 ## install
 
-`components` in `install` lists every component in install order: `git-tools micro yazi herdr`. Each may depend on the ones before it.
+`components` in `install` lists every component in install order: `git-tools micro yazi ghostty herdr`. Each may depend on the ones before it.
 
 agent-config is deliberately not a component. Its setup is an agent's job, through its `/wire-up` skill, and anyone using it has an agent. Keeping it out also keeps the dependencies one-way: dotfiles depends on git-tools and agent-config, agent-config depends on git-tools, and neither refers back to dotfiles. Don't add a reference to dotfiles in either repo. The only place that knows git-tools goes before agent-config is `/wire-up`.
 
@@ -56,9 +56,13 @@ Links `settings.json` (soft wrap, word wrap) into `~/.config/micro/`. The Markdo
 
 Links `yazi.toml` into `~/.config/yazi/`. Enter opens PDFs, tables (`csv tsv parquet xlsx json jsonl`) and Markdown through `herdr-view`, and everything else in `$EDITOR`. Also appends `EDITOR`/`VISUAL="code --wait"` to `~/.zshrc` when it sets neither. Needs `fd` and `ripgrep` for yazi's name and content search.
 
+### ghostty
+
+Links `config` (the `Retro Legends` theme) into `~/.config/ghostty/`. Ghostty also reads `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty`, after this one, so settings there win; on this machine that file is only Ghostty's commented template. It reports Ghostty as missing when `/Applications/Ghostty.app` isn't there: Herdr must run inside a terminal with Kitty graphics to show images such as tdf's PDF pages, and macOS's Terminal.app has none.
+
 ### herdr
 
-Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, then runs `herdr config check` and reloads the server. It reports Ghostty as missing when `/Applications/Ghostty.app` isn't there: Herdr must run inside a terminal with Kitty graphics to show images such as tdf's PDF pages, and macOS's Terminal.app has none.
+Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, then runs `herdr config check` and reloads the server.
 
 - `config.toml` owns the whole Herdr config, including the user's own settings (theme, toasts, status icons). Change them here.
 - The prefix is Herdr's default, `ctrl+b`. The one binding added is `prefix+space`, a popup running `herdr-open`.
