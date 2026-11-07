@@ -3,15 +3,15 @@
 
 [opener]
 pdf = [
-  { run = "herdr-view pdf %s1", desc = "tdf", block = true },
+  { run = "herdr-view %s1", desc = "tdf", block = true },
   { run = "open %s", desc = "Preview" },
 ]
 table = [
-  { run = "herdr-view table %s1", desc = "VisiData", block = true },
+  { run = "herdr-view %s1", desc = "VisiData", block = true },
   { run = "open %s", desc = "Default app" },
 ]
 markdown = [
-  { run = "herdr-view markdown %s1", desc = "glow (e edits in micro)", block = true },
+  { run = "herdr-view %s1", desc = "glow (e edits in micro)", block = true },
   { run = "code %s", desc = "VS Code" },
 ]
 

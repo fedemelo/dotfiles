@@ -1,24 +1,10 @@
 #!/usr/bin/env bash
-# Opens a file in the terminal viewer for its kind. Without a file, picks one from under the
-# current directory, newest first.
-#   herdr-view markdown|pdf|table [file]
+# Opens a file or directory in the terminal program for its kind.
+#   herdr-view <path>
 set -euo pipefail
 
-usage() { echo "Usage: herdr-view markdown|pdf|table [file]" >&2; exit 2; }
-
-pick() {
-  local name_tests=() pattern files
-  for pattern in "$@"; do name_tests+=(-o -name "$pattern"); done
-  files="$(find . \( -path '*/.*' -o -path '*/node_modules' \) -prune -o -type f \( "${name_tests[@]:1}" \) -print0 2>/dev/null \
-    | xargs -0 ls -t 2>/dev/null)" || true
-  if [ -z "$files" ]; then
-    # The pause keeps the message on screen before the popup or pane closes.
-    echo "No $* files under $PWD" >&2
-    sleep 2
-    exit 1
-  fi
-  printf '%s\n' "$files" | fzf --prompt="$kind> " --height=100%
-}
+[ $# -eq 1 ] || { echo "Usage: herdr-view <path>" >&2; exit 2; }
+path="$1"
 
 # Rendered by glow into less rather than read in glow's own viewer, where the left arrow means
 # "back to the file list" and a wide table scrolled right can't be scrolled back.
@@ -39,18 +25,13 @@ view_markdown() {
   done
 }
 
-kind="${1:-}"
-case "$kind" in
-  markdown) patterns=('*.md' '*.markdown') ;;
-  pdf) patterns=('*.pdf') ;;
-  table) patterns=('*.csv' '*.tsv' '*.parquet' '*.xlsx') ;;
-  *) usage ;;
-esac
-file="${2:-$(pick "${patterns[@]}")}" || exit 1
+[ -d "$path" ] && exec yazi "$path"
 
-case "$kind" in
-  markdown) view_markdown "$file" ;;
-  pdf) exec tdf "$file" ;;
+extension="$(printf '%s' "${path##*.}" | tr '[:upper:]' '[:lower:]')"
+case "$extension" in
+  md|markdown) view_markdown "$path" ;;
+  pdf) exec tdf "$path" ;;
   # Multithreaded pyarrow can segfault on some parquet files.
-  table) OMP_NUM_THREADS=1 ARROW_NUM_THREADS=1 exec vd "$file" ;;
+  csv|tsv|parquet|xlsx|json|jsonl) OMP_NUM_THREADS=1 ARROW_NUM_THREADS=1 exec vd "$path" ;;
+  *) exec micro "$path" ;;
 esac

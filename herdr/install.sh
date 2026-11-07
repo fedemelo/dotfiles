@@ -14,9 +14,7 @@ report_missing \
   "glow:brew install glow" \
   "tdf:brew install tdf" \
   "uv:brew install uv" \
-  "vd:uv tool install visidata --with pyarrow --with openpyxl" \
-  "harlequin:uv tool install 'harlequin[postgres]'" \
-  "code:in VS Code, run Shell Command: Install 'code' command in PATH"
+  "vd:uv tool install visidata --with pyarrow --with openpyxl"
 
 # The Markdown viewer's e and r keys need less --lesskey-src, which macOS's own less 581 lacks.
 less_major="$(less --version | awk 'NR == 1 { print int($2) }')"

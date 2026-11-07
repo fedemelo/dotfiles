@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Searches files from the focused pane's directory outward and opens the chosen one with
+# herdr-view. A typed path that exists opens as typed, so this also opens hidden files and
+# directories, which the search leaves out.
+set -euo pipefail
+# Herdr starts popups without the login shell's PATH.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+read -r pane cwd < <(herdr pane list | jq -r '.result.panes[] | select(.focused) | "\(.pane_id) \(.foreground_cwd // .cwd)"' | head -1)
+[ -n "$pane" ] || exit 1
+cd "$cwd"
+
+list_by_depth() {
+  local dir="$1"
+  shift
+  fd --type f "$@" . "$dir" | awk -F/ '{ print NF "\t" $0 }' | sort -n -s -k1,1 | cut -f2-
+}
+
+# Nearest first: this directory, then each parent up to home, each skipping the subtree already
+# listed. fzf keeps this order (--no-sort), so a nearby match always beats a better one far away.
+# Fuzzy scoring buried files a few folders away under scattered matches from all over home.
+candidates() {
+  list_by_depth . | sed 's|^\./||'
+  local dir="$PWD" child skip
+  case "$dir" in "$HOME"/*) ;; *) return 0 ;; esac
+  while [ "$dir" != "$HOME" ]; do
+    child="${dir##*/}"
+    dir="${dir%/*}"
+    skip=(--exclude "/$child")
+    # Library and Pictures hold most of the files under home, and listing them took 20 seconds.
+    [ "$dir" != "$HOME" ] || skip+=(--exclude /Library --exclude /Pictures)
+    list_by_depth "$dir" "${skip[@]}" | sed "s|^$HOME|~|"
+  done
+}
+
+expand_home() {
+  case "$1" in
+    "~") printf '%s\n' "$HOME" ;;
+    "~/"*) printf '%s\n' "$HOME/${1#\~/}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+status=0
+output="$(candidates | fzf --no-sort --exact --height=100% \
+  --print-query --expect=ctrl-o --bind 'enter:accept-or-print-query' \
+  --prompt='open> ' --header='enter: pane on the right   ctrl-o: here   or type a path')" || status=$?
+[ "$status" -eq 0 ] || exit 0
+
+query="$(sed -n 1p <<< "$output")"
+key="$(sed -n 2p <<< "$output")"
+choice="$(sed -n 3p <<< "$output")"
+
+target=""
+case "$query" in
+  /*|"~"|"~/"*|.|./*|..|../*) [ -e "$(expand_home "$query")" ] && target="$(expand_home "$query")" ;;
+esac
+[ -n "$target" ] || target="$(expand_home "$choice")"
+if [ -z "$target" ]; then
+  # The pause keeps the message on screen before the popup closes.
+  echo "Nothing matches $query" >&2
+  sleep 2
+  exit 1
+fi
+
+if [ "$key" = ctrl-o ]; then
+  exec herdr-view "$target"
+fi
+new="$(herdr pane split "$pane" --direction right --ratio 0.5 --cwd "$cwd" --focus | jq -r '.result.pane.pane_id')"
+# exec, so the pane closes when the viewer quits. With "<command>; exit", Ctrl+C aborted the
+# whole line and left the pane open on an empty shell.
+herdr pane run "$new" "exec herdr-view $(printf '%q' "$target")"

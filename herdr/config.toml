@@ -3,12 +3,10 @@ onboarding = false
 [keys]
 prefix = "ctrl+b"
 
-# Herdr binds a single key after the prefix, so the IDE shortcuts share this one and herdr-ide
-# reads the letter. prefix+prefix cannot be used: it sends a literal ctrl+b.
 [[keys.command]]
 key = "prefix+space"
 type = "popup"
-command = "~/.local/bin/herdr-ide"
+command = "~/.local/bin/herdr-open"
 width = "90%"
 height = "90%"
 
