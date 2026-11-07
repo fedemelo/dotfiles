@@ -15,12 +15,12 @@ When asked to install or set up this repo, do all three steps. The human install
 - `install`: the entry point for humans and agents. Installs each component in order.
 - `CLAUDE.md`: imports this file, since Claude Code reads `CLAUDE.md` and not `AGENTS.md`.
 - `lib/link.sh`: helpers that every component's `install.sh` sources: `link`, `link_bin`, `report_missing`.
-- `micro/`, `yazi/`, `ghostty/`, `herdr/`: one directory per local component, each with its own `install.sh`.
+- `micro/`, `ghostty/`, `herdr/`: one directory per local component, each with its own `install.sh`.
 - `tests/install.test.sh`, `tests/link.test.sh`: the suites. CI runs every `tests/*.test.sh` on macOS.
 
 ## install
 
-`components` in `install` lists every component in install order: `git-tools micro yazi ghostty herdr`. Each may depend on the ones before it.
+`components` in `install` lists every component in install order: `git-tools micro ghostty herdr`. Each may depend on the ones before it.
 
 agent-config is deliberately not a component. Its setup is an agent's job, through its `/wire-up` skill, and anyone using it has an agent. Keeping it out also keeps the dependencies one-way: dotfiles depends on git-tools and agent-config, agent-config depends on git-tools, and neither refers back to dotfiles. Don't add a reference to dotfiles in either repo. The only place that knows git-tools goes before agent-config is `/wire-up`.
 
@@ -52,10 +52,6 @@ The repo has no `install.sh` at its root on purpose. A pod runs the first of `in
 
 Links `settings.json` (soft wrap, word wrap) into `~/.config/micro/`. The Markdown viewer edits with micro.
 
-### yazi
-
-Links `yazi.toml` into `~/.config/yazi/`. Enter opens PDFs, tables (`csv tsv parquet xlsx json jsonl`) and Markdown through `herdr-view`, and everything else in `$EDITOR`. Also appends `EDITOR`/`VISUAL="code --wait"` to `~/.zshrc` when it sets neither. Needs `fd` and `ripgrep` for yazi's name and content search.
-
 ### ghostty
 
 Links `config` (the `Retro Legends` theme) into `~/.config/ghostty/`. Ghostty also reads `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty`, after this one, so settings there win; on this machine that file is only Ghostty's commented template. It reports Ghostty as missing when `/Applications/Ghostty.app` isn't there: Herdr must run inside a terminal with Kitty graphics to show images such as tdf's PDF pages, and macOS's Terminal.app has none.
@@ -67,12 +63,12 @@ Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, the
 - `config.toml` owns the whole Herdr config, including the user's own settings (theme, toasts, status icons). Change them here.
 - The prefix is Herdr's default, `ctrl+b`. The one binding added is `prefix+space`, a popup running `herdr-open`.
 - `herdr-open`: a search box over files, starting in the focused pane's directory, read from `herdr pane list`. Popups aren't panes, so the focused pane is still the one under the popup. It lists that directory, then each parent up to home, each sorted by depth, and fzf keeps that order (`--no-sort --exact`) so nearer files always come first; fuzzy scoring buried nearby files under scattered matches from all over home. `~/Library` and `~/Pictures` are skipped, because listing them took 20 seconds. A typed path that exists (`/`, `~`, `.` or `..` at the start) opens as typed, which covers hidden files and directories. Enter splits the focused pane to the right and runs `herdr-view` there with `exec`, so the pane closes when the viewer quits; `ctrl-o` runs it in the popup.
-- `herdr-view <path>`: opens a path in the terminal program for its kind: a directory in yazi, Markdown in glow, PDFs in tdf, tables (`csv tsv parquet xlsx json jsonl`) in VisiData, anything else in VS Code. `--kind` prints which of those it would pick, so `herdr-open` can open VS Code files straight from the popup, without a pane. yazi's openers call it too. Markdown is rendered by glow into `less`, not glow's own viewer, where the left arrow means "back to file list". In it, `e` edits in micro and `r` re-renders, through `less --lesskey-src`, which needs less 582 or later (macOS ships 581; Homebrew's works). Tables run VisiData with one Arrow thread, because multithreaded pyarrow can segfault on some parquet files.
+- `herdr-view <path>`: opens a path in the terminal program for its kind: Markdown in glow, PDFs in tdf, tables (`csv tsv parquet xlsx json jsonl`) in VisiData, anything else, directories included, in VS Code. `--kind` prints which of those it would pick, so `herdr-open` can open VS Code files straight from the popup, without a pane. Markdown is rendered by glow into `less`, not glow's own viewer, where the left arrow means "back to file list". In it, `e` edits in micro and `r` re-renders, through `less --lesskey-src`, which needs less 582 or later (macOS ships 581; Homebrew's works). Tables run VisiData with one Arrow thread, because multithreaded pyarrow can segfault on some parquet files.
 - `herdr-job-status`: one line in the tab bar saying whether a background job is running or wrote output recently. It prints nothing until `~/.config/job-status.conf` exists; the script's header documents that file. Per-machine values like this stay out of the repo.
 
 ## Adding things
 
-- **A file type with its own viewer**: one case in `herdr-view`, and a rule in `yazi.toml` if yazi should use it.
+- **A file type with its own viewer**: one case in `herdr-view`.
 - **A Herdr binding outside the menu**: check Herdr's defaults first, with `herdr --default-config | grep -oE '"prefix\+[^"]+"'`. Never use `d`: `prefix+shift+d` closes the workspace. Then validate with `XDG_CONFIG_HOME=<dir with herdr/config.toml> herdr config check`.
 - **Machine config** (shell, VS Code, ...): a new directory with an `install.sh` that sources `lib/link.sh`, and its name in `components`. A tool with its own repo goes in `separate_repos` instead.
 - **A program a component needs**: a `report_missing` entry with its install command.

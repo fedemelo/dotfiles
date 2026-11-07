@@ -11,7 +11,7 @@ git clone https://github.com/fedemelo/dotfiles ~/code/personal/dotfiles
 What it sets up:
 - [git-tools](https://github.com/fedemelo/git-tools): cloned or pulled into `~/code/personal`, then installed. It stays a separate repo.
 - Herdr as a mini IDE. `ctrl+b` `space` opens a search over files, nearest first. Enter opens the file in a pane on the right, `ctrl-o` in the popup. PDFs, Markdown and tables open in terminal viewers, anything else in VS Code.
-- yazi and micro, which the Herdr viewers use.
+- micro, which the Markdown viewer edits with.
 - Ghostty, the terminal to run Herdr in, since Terminal.app can't show its images.
 
 It never installs programs. It lists the missing ones and how to install each.

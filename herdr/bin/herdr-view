@@ -26,7 +26,7 @@ view_markdown() {
 
 kind_of() {
   if [ -d "$1" ]; then
-    echo directory
+    echo editor
     return
   fi
   case "$(printf '%s' "${1##*.}" | tr '[:upper:]' '[:lower:]')" in
@@ -46,7 +46,6 @@ fi
 path="$1"
 
 case "$(kind_of "$path")" in
-  directory) exec yazi "$path" ;;
   markdown) view_markdown "$path" ;;
   pdf) exec tdf "$path" ;;
   # Multithreaded pyarrow can segfault on some parquet files.
