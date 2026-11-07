@@ -11,6 +11,7 @@ report_missing \
   "herdr:see https://herdr.dev" \
   "jq:brew install jq" \
   "fzf:brew install fzf" \
+  "fd:brew install fd" \
   "glow:brew install glow" \
   "tdf:brew install tdf" \
   "uv:brew install uv" \
