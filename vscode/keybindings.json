@@ -1,0 +1,46 @@
+[
+  {
+    "key": "cmd+l cmd+m",
+    "command": "editor.action.insertSnippet",
+    "args": {
+      "snippet": "<M>{r`${1}`}</M>"
+    },
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "cmd+l cmd+i",
+    "command": "editor.action.insertSnippet",
+    "args": {
+      "snippet": "\\begin{itemize}\n\t\\item $0\n\\end{itemize}"
+    },
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "cmd+l cmd+e",
+    "command": "editor.action.insertSnippet",
+    "args": {
+      "snippet": "\\begin{${1:equation}}\n\t$0\n\\end{${1:equation}}"
+    }
+  },
+  {
+    "key": "cmd+l cmd+p",
+    "command": "editor.action.insertSnippet",
+    "args": {
+      "snippet": "\\begin{pseudocode}\ndef $0\n\\end{pseudocode}\n\\begin{annotations}\n\t\t\n\\end{annotations}"
+    }
+  },
+  {
+    "key": "cmd+l cmd+d",
+    "command": "editor.action.insertSnippet",
+    "args": {
+      "snippet": "\\begin{definicion}{}{}\n\t$0\n\\end{definicion}"
+    }
+  },
+  {
+    "key": "cmd+l cmd+t",
+    "command": "editor.action.insertSnippet",
+    "args": {
+      "snippet": "\\begin{teorema}{}{}\n\t$0\n\\end{teorema}"
+    }
+  }
+]
