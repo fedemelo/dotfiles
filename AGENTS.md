@@ -15,12 +15,12 @@ When asked to install or set up this repo, do all three steps. The human install
 - `install`: the entry point for humans and agents. Installs each component in order.
 - `CLAUDE.md`: imports this file, since Claude Code reads `CLAUDE.md` and not `AGENTS.md`.
 - `lib/link.sh`: helpers that every component's `install.sh` sources: `link`, `link_bin`, `report_missing`.
-- `ghostty/`, `herdr/`: one directory per local component, each with its own `install.sh`.
+- `ghostty/`, `herdr/`, `vscode/`: one directory per local component, each with its own `install.sh`.
 - `tests/install.test.sh`, `tests/link.test.sh`: the suites. CI runs every `tests/*.test.sh` on macOS.
 
 ## install
 
-`components` in `install` lists every component in install order: `git-tools ghostty herdr`. Each may depend on the ones before it.
+`components` in `install` lists every component in install order: `git-tools ghostty herdr vscode`. Each may depend on the ones before it.
 
 agent-config is deliberately not a component. Its setup is an agent's job, through its `/wire-up` skill, and anyone using it has an agent. Keeping it out also keeps the dependencies one-way: dotfiles depends on git-tools and agent-config, agent-config depends on git-tools, and neither refers back to dotfiles. Don't add a reference to dotfiles in either repo. The only place that knows git-tools goes before agent-config is `/wire-up`.
 
@@ -62,11 +62,19 @@ Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, the
 - `herdr-view <path>`: opens a path in the terminal program for its kind: Markdown in glow, PDFs in tdf, tables (`csv tsv parquet xlsx json jsonl`) in VisiData, anything else, directories included, in VS Code. `--kind` prints which of those it would pick, so `herdr-open` can open VS Code files straight from the popup, without a pane. Markdown is rendered by glow into `less`, not glow's own viewer, where the left arrow means "back to file list". In it, `e` edits in VS Code, waiting until its tab closes, and `r` re-renders, through `less --lesskey-src`, which needs less 582 or later (macOS ships 581; Homebrew's works). Tables run VisiData with one Arrow thread, because multithreaded pyarrow can segfault on some parquet files.
 - `herdr-job-status`: one line in the tab bar saying whether a background job is running or wrote output recently. It prints nothing until `~/.config/job-status.conf` exists; the script's header documents that file. Per-machine values like this stay out of the repo.
 
+### vscode
+
+Links `settings.json` and `keybindings.json` into `~/Library/Application Support/Code/User/`, then reports each extension in `extensions.txt` that `code --list-extensions` lacks. A setting changed in VS Code's UI, or a word added to the spell checker, lands in this repo through the link, so commit it.
+
+VS Code's Settings Sync must not sync Settings or Keybindings, or it writes another machine's copy over these files. Extensions and UI state can keep syncing. The installer can't check this, because the choice lives in VS Code's state database.
+
+The account settings (Copilot's account, the SonarLint connection) are kept on purpose. Paths that differ between machines, such as a Python interpreter, are not.
+
 ## Adding things
 
 - **A file type with its own viewer**: one case in `herdr-view`.
 - **A Herdr binding**: check Herdr's defaults first, with `herdr --default-config | grep -oE '"prefix\+[^"]+"'`. Never use `d`: `prefix+shift+d` closes the workspace. Then validate with `XDG_CONFIG_HOME=<dir with herdr/config.toml> herdr config check`.
-- **Machine config** (shell, VS Code, ...): a new directory with an `install.sh` that sources `lib/link.sh`, and its name in `components`. A tool with its own repo goes in `separate_repos` instead.
+- **Machine config** (shell, ...): a new directory with an `install.sh` that sources `lib/link.sh`, and its name in `components`. A tool with its own repo goes in `separate_repos` instead.
 - **A program a component needs**: a `report_missing` entry with its install command.
 
 ## Testing
