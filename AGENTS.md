@@ -65,7 +65,7 @@ Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, the
 ## Adding things
 
 - **A file type with its own viewer**: one case in `herdr-view`.
-- **A Herdr binding outside the menu**: check Herdr's defaults first, with `herdr --default-config | grep -oE '"prefix\+[^"]+"'`. Never use `d`: `prefix+shift+d` closes the workspace. Then validate with `XDG_CONFIG_HOME=<dir with herdr/config.toml> herdr config check`.
+- **A Herdr binding**: check Herdr's defaults first, with `herdr --default-config | grep -oE '"prefix\+[^"]+"'`. Never use `d`: `prefix+shift+d` closes the workspace. Then validate with `XDG_CONFIG_HOME=<dir with herdr/config.toml> herdr config check`.
 - **Machine config** (shell, VS Code, ...): a new directory with an `install.sh` that sources `lib/link.sh`, and its name in `components`. A tool with its own repo goes in `separate_repos` instead.
 - **A program a component needs**: a `report_missing` entry with its install command.
 
