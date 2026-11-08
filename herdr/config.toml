@@ -14,6 +14,9 @@ height = "90%"
 name = "terminal"
 auto_switch = false
 
+[theme.custom]
+accent = "#00cc55"
+
 [ui]
 status_indicators = "symbols"
 tab_bar_right = [{ type = "command", command = "~/.local/bin/herdr-job-status", interval_seconds = 10, timeout_seconds = 5 }]
