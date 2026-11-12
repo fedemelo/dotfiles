@@ -114,5 +114,11 @@
     },
     "[java]": {
         "editor.defaultFormatter": "Oracle.oracle-java"
+    },
+    "[latex]": {
+        "editor.defaultFormatter": "mathematic.vscode-latex"
+    },
+    "workbench.editorAssociations": {
+        "*.pdf": "latex-workshop-pdf-hook"
     }
 }
