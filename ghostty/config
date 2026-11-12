@@ -4,3 +4,7 @@ theme = Retro Legends
 # runs inside Herdr. \x02 is ctrl+b, Herdr's prefix, so these type prefix+n and prefix+p.
 keybind = ctrl+tab=text:\x02n
 keybind = ctrl+shift+tab=text:\x02p
+
+# Likewise cmd+t and cmd+w open and close Herdr's tabs: prefix+c and prefix+shift+x.
+keybind = cmd+t=text:\x02c
+keybind = cmd+w=text:\x02X
