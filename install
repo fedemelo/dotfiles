@@ -14,7 +14,7 @@ share_dir="${DOTFILES_SHARE_DIR:-/mnt/personal}"
 managed_dir="${DOTFILES_MANAGED_DIR:-/etc/claude-code}"
 
 # Install order: each component may depend on the ones before it.
-components=(git-tools ghostty herdr vscode)
+components=(git-tools ghostty herdr vscode hammerspoon)
 # Components that are repos of their own, cloned beside this one. The rest are directories here.
 separate_repos=(git-tools)
 
