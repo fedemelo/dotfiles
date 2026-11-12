@@ -72,13 +72,17 @@ The account settings (Copilot's account, the SonarLint connection) are kept on p
 
 ### hammerspoon
 
-Links `init.lua` and `dictation.lua` into `~/.hammerspoon/`. `init.lua` owns the whole Hammerspoon config.
+Links `init.lua` and `dictation.lua` into `~/.hammerspoon/`, and `words.txt` into `~/.config/dictation/`. `init.lua` owns the whole Hammerspoon config. It turns on launch at login and reloads the config whenever a `.lua` file in this directory changes, so a pull or an edit takes effect by itself. The installer opens Hammerspoon if it isn't running, because launch at login is only set once it has run. Don't reload through `hs -c 'hs.reload()'`: the reload drops the connection that `hs` waits on, so it hangs.
 
-`dictation.lua` is push-to-talk transcription with a local Whisper model. ⌃⌥Space starts recording with `rec` and pressing it again stops it. The audio is transcribed with `whisper-cli` and the text goes to the clipboard. Recordings are kept in `~/Dictations`, each with its transcript beside it as a `.txt`.
+`dictation.lua` is push-to-talk transcription with a local Whisper model. ⌃⌥Space starts recording with `rec` and pressing it again stops it; `rec` also stops itself after 5 minutes. The audio is transcribed with `whisper-cli` and the text goes to the clipboard.
 
-- Before transcribing, it reads `kern.memorystatus_vm_pressure_level`. Normal uses large-v3-turbo (about 0.9 GB while it runs). Warning asks whether to use the small model (about 0.55 GB) or wait. Critical refuses. Recording always happens, so a refused clip is never lost: ⌃⌥⇧Space transcribes the newest recording without a transcript.
+- Whisper runs with voice activity detection (the Silero model), since without it Whisper makes up text for silence. A recording with no speech is deleted and reported as "Nothing heard".
+- Words it should spell right (names, jargon) go comma-separated in `words.txt`, linked to `~/.config/dictation/words.txt` and passed to Whisper as `--prompt`. agent-config's `dictation-vocab` skill tunes it, and its edits land here through the link, so commit them.
+- Recordings go to `~/Dictations`, and each transcript is added to `~/Dictations/log.tsv` as `recording<TAB>language<TAB>text`. A recording counts as transcribed once it's in the log. Only the newest 50 transcribed recordings are kept; untranscribed ones are never pruned.
+- Before transcribing, it reads `kern.memorystatus_vm_pressure_level`. Normal uses large-v3-turbo (about 0.9 GB while it runs). Warning asks whether to use the small model (about 0.55 GB) or wait. Critical refuses. Recording always happens, so a refused clip is never lost: ⌃⌥⇧Space transcribes the newest recording not in the log.
 - The models live in `~/.local/share/whisper/`, outside the repo. `install.sh` reads their paths from `dictation.lua` and reports each missing one with the `curl` command that downloads it.
 - Hammerspoon needs microphone access, asked for on the first recording.
+- To test it by hand, load a second copy with `hs.hotkey.bind` replaced by a stub that keeps the callbacks, then call them through `hs -c`. Hammerspoon's hotkeys ignore keystrokes sent by `hs.eventtap`.
 
 ## Adding things
 
