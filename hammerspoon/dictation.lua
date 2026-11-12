@@ -21,7 +21,8 @@ local function fail(message)
 end
 
 local function memoryPressure()
-  return tonumber(hs.execute("/usr/sbin/sysctl -n kern.memorystatus_vm_pressure_level"))
+  local output = hs.execute("/usr/sbin/sysctl -n kern.memorystatus_vm_pressure_level")
+  return tonumber(output)
 end
 
 local function withoutExtension(path)
