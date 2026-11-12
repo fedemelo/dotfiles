@@ -22,6 +22,7 @@ haskell.haskell
 haskell.language-haskell
 hoovercj.haskell-linter
 inferrinizzard.prettier-sql-vscode
+james-yu.latex-workshop
 johnpapa.angular-essentials
 johnpapa.angular2
 johnpapa.vscode-peacock
@@ -29,6 +30,7 @@ johnpapa.winteriscoming
 justusadam.language-haskell
 madhavd1.javadoc-tools
 mark-wiemer.vscode-autohotkey-plus-plus
+mathematic.vscode-latex
 mechatroner.rainbow-csv
 moshfeu.diff-merge
 ms-azuretools.vscode-containers
