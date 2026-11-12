@@ -15,12 +15,12 @@ When asked to install or set up this repo, do all three steps. The human install
 - `install`: the entry point for humans and agents. Installs each component in order.
 - `CLAUDE.md`: imports this file, since Claude Code reads `CLAUDE.md` and not `AGENTS.md`.
 - `lib/link.sh`: helpers that every component's `install.sh` sources: `link`, `link_bin`, `report_missing`.
-- `ghostty/`, `herdr/`, `vscode/`: one directory per local component, each with its own `install.sh`.
+- `ghostty/`, `herdr/`, `vscode/`, `hammerspoon/`: one directory per local component, each with its own `install.sh`.
 - `tests/install.test.sh`, `tests/link.test.sh`: the suites. CI runs every `tests/*.test.sh` on macOS.
 
 ## install
 
-`components` in `install` lists every component in install order: `git-tools ghostty herdr vscode`. Each may depend on the ones before it.
+`components` in `install` lists every component in install order: `git-tools ghostty herdr vscode hammerspoon`. Each may depend on the ones before it.
 
 agent-config is deliberately not a component. Its setup is an agent's job, through its `/wire-up` skill, and anyone using it has an agent. Keeping it out also keeps the dependencies one-way: dotfiles depends on git-tools and agent-config, agent-config depends on git-tools, and neither refers back to dotfiles. Don't add a reference to dotfiles in either repo. The only place that knows git-tools goes before agent-config is `/wire-up`.
 
@@ -69,6 +69,16 @@ Links `settings.json` and `keybindings.json` into `~/Library/Application Support
 VS Code's Settings Sync must not sync Settings or Keybindings, or it writes another machine's copy over these files. Extensions and UI state can keep syncing. The installer can't check this, because the choice lives in VS Code's state database.
 
 The account settings (Copilot's account, the SonarLint connection) are kept on purpose. Paths that differ between machines, such as a Python interpreter, are not.
+
+### hammerspoon
+
+Links `init.lua` and `dictation.lua` into `~/.hammerspoon/`. `init.lua` owns the whole Hammerspoon config.
+
+`dictation.lua` is push-to-talk transcription with a local Whisper model. ⌃⌥Space starts recording with `rec` and pressing it again stops it. The audio is transcribed with `whisper-cli` and the text goes to the clipboard. Recordings are kept in `~/Dictations`, each with its transcript beside it as a `.txt`.
+
+- Before transcribing, it reads `kern.memorystatus_vm_pressure_level`. Normal uses large-v3-turbo (about 0.9 GB while it runs). Warning asks whether to use the small model (about 0.55 GB) or wait. Critical refuses. Recording always happens, so a refused clip is never lost: ⌃⌥⇧Space transcribes the newest recording without a transcript.
+- The models live in `~/.local/share/whisper/`, outside the repo. `install.sh` reads their paths from `dictation.lua` and reports each missing one with the `curl` command that downloads it.
+- Hammerspoon needs microphone access, asked for on the first recording.
 
 ## Adding things
 
