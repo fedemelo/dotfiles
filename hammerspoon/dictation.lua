@@ -98,6 +98,28 @@ local function whisperArguments(recordingPath, model)
   return arguments
 end
 
+local textRoles = { AXTextField = true, AXTextArea = true, AXComboBox = true }
+
+-- Reading the focused element and pressing ⌘V both need Accessibility access. Passing true makes
+-- macOS ask for it while it isn't granted; until then the text is only copied.
+local function textFieldIsFocused()
+  if not hs.accessibilityState(true) then
+    return false
+  end
+  local focused = hs.axuielement.systemWideElement():attributeValue("AXFocusedUIElement")
+  return focused ~= nil and textRoles[focused:attributeValue("AXRole")] == true
+end
+
+local function deliver(text)
+  hs.pasteboard.setContents(text)
+  hs.sound.getByName("Glass"):play()
+  if not textFieldIsFocused() then
+    return hs.alert.show("Copied")
+  end
+  hs.eventtap.keyStroke({ "cmd" }, "v")
+  hs.alert.show("Pasted")
+end
+
 local function onTranscribed(recordingPath, stdout, stderr)
   local text = collapseWhitespace(stdout)
   if text == "" then
@@ -106,9 +128,7 @@ local function onTranscribed(recordingPath, stdout, stderr)
   end
   logTranscript(recordingPath, stderr:match("auto%-detected language: (%a+)") or "?", text)
   pruneTranscribedRecordings()
-  hs.pasteboard.setContents(text)
-  hs.sound.getByName("Glass"):play()
-  hs.alert.show("Copied")
+  deliver(text)
 end
 
 local function transcribe(recordingPath, model)
