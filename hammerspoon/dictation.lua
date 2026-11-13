@@ -21,7 +21,7 @@ local retryHint = "Recording kept. Press ⌃⌥⇧Space to transcribe it later."
 local pressure = { normal = 1, warning = 2 }
 
 local recorder, recording, stopping, transcriber
-local transcriptionStatus = {}
+local status = {}
 
 local function fail(message)
   hs.sound.getByName("Basso"):play()
@@ -123,16 +123,41 @@ local function deliver(text)
   hs.alert.show("Pasted")
 end
 
-local function statusText()
-  if transcriptionStatus.percent then
-    return string.format("Transcribing… %d%%", transcriptionStatus.percent)
+local function transcriptionText()
+  if status.percent then
+    return string.format("Transcribing… %d%%", status.percent)
   end
   return "Transcribing…"
 end
 
-local function cornerBadge(text)
+local function stopButton(center, radius)
+  local iconSide = radius * 0.7
+  return {
+    {
+      type = "circle",
+      action = "fill",
+      fillColor = { red = 0.85, green = 0.2, blue = 0.2 },
+      center = center,
+      radius = radius,
+      id = "stop",
+      trackMouseUp = true,
+    },
+    {
+      type = "rectangle",
+      action = "fill",
+      fillColor = { white = 1 },
+      frame = { x = center.x - iconSide / 2, y = center.y - iconSide / 2, w = iconSide, h = iconSide },
+      id = "stop",
+      trackMouseUp = true,
+    },
+  }
+end
+
+local function cornerBadge(text, onStop)
   local screen = hs.screen.mainScreen():frame()
   local width, height, margin = 210, 40, 20
+  local buttonRadius = 12
+  local textWidth = onStop and width - 2 * buttonRadius - 16 or width
   local badge = hs.canvas.new({
     x = screen.x + screen.w - width - margin,
     y = screen.y + screen.h - height - margin,
@@ -151,40 +176,49 @@ local function cornerBadge(text)
     textColor = { white = 1 },
     textSize = 18,
     textAlignment = "center",
-    frame = { x = 0, y = 8, w = width, h = height - 8 },
+    frame = { x = 0, y = 8, w = textWidth, h = height - 8 },
   }
+  if onStop then
+    badge:appendElements(stopButton({ x = width - buttonRadius - 12, y = height / 2 }, buttonRadius))
+    badge:clickActivating(false)
+    badge:mouseCallback(function(_, event, id)
+      if event == "mouseUp" and id == "stop" then
+        onStop()
+      end
+    end)
+  end
   badge:level(hs.canvas.windowLevels.overlay)
   badge:behavior(hs.canvas.windowBehaviors.canJoinAllSpaces)
   return badge:show()
 end
 
-local function showStatusInCorner()
-  transcriptionStatus.badge = cornerBadge(statusText())
-end
-
-local function startStatus()
-  transcriptionStatus = { timer = hs.timer.doAfter(centerStatusSeconds, showStatusInCorner) }
-  hs.alert.show("Transcribing…", centerStatusSeconds)
+-- The center alert is easy to miss, so anything still going after it fades stays in the corner.
+local function startStatus(text, showBadge)
+  status = {}
+  status.timer = hs.timer.doAfter(centerStatusSeconds, function()
+    status.badge = showBadge()
+  end)
+  hs.alert.show(text, centerStatusSeconds)
 end
 
 -- Whisper reports progress once per segment, and with voice activity detection it overshoots 100%.
-local function updateStatus(whisperStderr)
+local function updateTranscriptionStatus(whisperStderr)
   local percent = whisperStderr:match(".*progress =%s*(%d+)%%")
   if not percent then
     return
   end
-  transcriptionStatus.percent = math.min(tonumber(percent), 99)
-  if transcriptionStatus.badge then
-    transcriptionStatus.badge[2].text = statusText()
+  status.percent = math.min(tonumber(percent), 99)
+  if status.badge then
+    status.badge[2].text = transcriptionText()
   end
 end
 
 local function endStatus()
-  transcriptionStatus.timer:stop()
-  if transcriptionStatus.badge then
-    transcriptionStatus.badge:delete()
+  status.timer:stop()
+  if status.badge then
+    status.badge:delete()
   end
-  transcriptionStatus = {}
+  status = {}
 end
 
 local function onTranscribed(recordingPath, transcript, stderr)
@@ -220,11 +254,13 @@ local function transcribe(recordingPath, model)
     onTranscribed(recordingPath, transcript, stderr)
   end, function(_, _, stderrChunk)
     stderr = stderr .. stderrChunk
-    updateStatus(stderrChunk)
+    updateTranscriptionStatus(stderrChunk)
     return true
   end, whisperArguments(recordingPath, model, transcriptBase))
   transcriber:start()
-  startStatus()
+  startStatus("Transcribing…", function()
+    return cornerBadge(transcriptionText())
+  end)
 end
 
 local function transcribeIfMemoryAllows(recordingPath)
@@ -250,6 +286,7 @@ end
 -- rec exits 0 by itself only when its trim reaches maxRecordingSeconds.
 local function onRecorderExit(exitCode)
   recorder = nil
+  endStatus()
   if not stopping then
     if exitCode ~= 0 then
       return fail("Recording stopped unexpectedly. Check that Hammerspoon has microphone access.")
@@ -257,6 +294,14 @@ local function onRecorderExit(exitCode)
     hs.alert.show(string.format("Recording stopped at the %d-minute limit", maxRecordingSeconds // 60))
   end
   transcribeIfMemoryAllows(recording)
+end
+
+local function stopRecording()
+  if stopping then
+    return
+  end
+  stopping = true
+  recorder:terminate()
 end
 
 local function startRecording()
@@ -270,12 +315,9 @@ local function startRecording()
     return fail("Could not start recording. Run the dotfiles install to check for sox.")
   end
   hs.sound.getByName("Tink"):play()
-  hs.alert.show("Recording…")
-end
-
-local function stopRecording()
-  stopping = true
-  recorder:terminate()
+  startStatus("Recording…", function()
+    return cornerBadge("Recording…", stopRecording)
+  end)
 end
 
 local function toggle()
