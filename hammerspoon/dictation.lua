@@ -24,7 +24,6 @@ local recorder, recording, stopping, transcriber
 local status = {}
 
 local function fail(message)
-  hs.sound.getByName("Basso"):play()
   hs.alert.show(message, 6)
 end
 
@@ -115,7 +114,6 @@ end
 
 local function deliver(text)
   hs.pasteboard.setContents(text)
-  hs.sound.getByName("Glass"):play()
   if not textFieldIsFocused() then
     return hs.alert.show("Copied")
   end
@@ -314,7 +312,6 @@ local function startRecording()
     recorder = nil
     return fail("Could not start recording. Run the dotfiles install to check for sox.")
   end
-  hs.sound.getByName("Tink"):play()
   startStatus("Recording…", function()
     return cornerBadge("Recording…", stopRecording)
   end)
