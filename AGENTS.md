@@ -68,7 +68,7 @@ Links `settings.json` and `keybindings.json` into `~/Library/Application Support
 
 VS Code's Settings Sync must not sync Settings or Keybindings, or it writes another machine's copy over these files. Extensions and UI state can keep syncing. The installer can't check this, because the choice lives in VS Code's state database.
 
-The account settings (Copilot's account, the SonarLint connection) are kept on purpose. Paths that differ between machines, such as a Python interpreter, are not.
+Copilot's account setting is kept on purpose. Paths that differ between machines, such as a Python interpreter, are not.
 
 ### hammerspoon
 
