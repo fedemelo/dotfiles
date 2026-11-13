@@ -64,7 +64,6 @@ redhat.vscode-xml
 rioj7.command-variable
 ritwickdey.liveserver
 rust-lang.rust-analyzer
-sonarsource.sonarlint-vscode
 streetsidesoftware.code-spell-checker
 streetsidesoftware.code-spell-checker-spanish
 svelte.svelte-vscode
