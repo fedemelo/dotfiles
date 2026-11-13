@@ -11,6 +11,7 @@ local vadModel = home .. "/.local/share/whisper/ggml-silero-v5.1.2.bin"
 local rec = "/opt/homebrew/bin/rec"
 local whisper = "/opt/homebrew/bin/whisper-cli"
 local maxRecordingSeconds = 300
+local centerStatusSeconds = 2
 local keptRecordings = 50
 local toggleKey = { { "ctrl", "alt" }, "space" }
 local retryKey = { { "ctrl", "alt", "shift" }, "space" }
@@ -20,6 +21,7 @@ local retryHint = "Recording kept. Press ⌃⌥⇧Space to transcribe it later."
 local pressure = { normal = 1, warning = 2 }
 
 local recorder, recording, stopping, transcriber
+local transcriptionStatus = {}
 
 local function fail(message)
   hs.sound.getByName("Basso"):play()
@@ -88,8 +90,9 @@ local function pruneTranscribedRecordings()
   end
 end
 
-local function whisperArguments(recordingPath, model)
-  local arguments = { "-m", model, "--vad", "-vm", vadModel, "-f", recordingPath, "-l", "auto", "-nt" }
+local function whisperArguments(recordingPath, model, transcriptBase)
+  local arguments = { "-m", model, "--vad", "-vm", vadModel, "-f", recordingPath, "-l", "auto", "-pp", "-otxt", "-of",
+    transcriptBase }
   local vocabulary = collapseWhitespace(readFile(vocabularyPath))
   if vocabulary ~= "" then
     table.insert(arguments, "--prompt")
@@ -120,8 +123,72 @@ local function deliver(text)
   hs.alert.show("Pasted")
 end
 
-local function onTranscribed(recordingPath, stdout, stderr)
-  local text = collapseWhitespace(stdout)
+local function statusText()
+  if transcriptionStatus.percent then
+    return string.format("Transcribing… %d%%", transcriptionStatus.percent)
+  end
+  return "Transcribing…"
+end
+
+local function cornerBadge(text)
+  local screen = hs.screen.mainScreen():frame()
+  local width, height, margin = 210, 40, 20
+  local badge = hs.canvas.new({
+    x = screen.x + screen.w - width - margin,
+    y = screen.y + screen.h - height - margin,
+    w = width,
+    h = height,
+  })
+  badge[1] = {
+    type = "rectangle",
+    action = "fill",
+    fillColor = { white = 0, alpha = 0.75 },
+    roundedRectRadii = { xRadius = 10, yRadius = 10 },
+  }
+  badge[2] = {
+    type = "text",
+    text = text,
+    textColor = { white = 1 },
+    textSize = 18,
+    textAlignment = "center",
+    frame = { x = 0, y = 8, w = width, h = height - 8 },
+  }
+  badge:level(hs.canvas.windowLevels.overlay)
+  badge:behavior(hs.canvas.windowBehaviors.canJoinAllSpaces)
+  return badge:show()
+end
+
+local function showStatusInCorner()
+  transcriptionStatus.badge = cornerBadge(statusText())
+end
+
+local function startStatus()
+  transcriptionStatus = { timer = hs.timer.doAfter(centerStatusSeconds, showStatusInCorner) }
+  hs.alert.show("Transcribing…", centerStatusSeconds)
+end
+
+-- Whisper reports progress once per segment, and with voice activity detection it overshoots 100%.
+local function updateStatus(whisperStderr)
+  local percent = whisperStderr:match(".*progress =%s*(%d+)%%")
+  if not percent then
+    return
+  end
+  transcriptionStatus.percent = math.min(tonumber(percent), 99)
+  if transcriptionStatus.badge then
+    transcriptionStatus.badge[2].text = statusText()
+  end
+end
+
+local function endStatus()
+  transcriptionStatus.timer:stop()
+  if transcriptionStatus.badge then
+    transcriptionStatus.badge:delete()
+  end
+  transcriptionStatus = {}
+end
+
+local function onTranscribed(recordingPath, transcript, stderr)
+  local text = collapseWhitespace(transcript)
   if text == "" then
     os.remove(recordingPath)
     return hs.alert.show("Nothing heard")
@@ -137,15 +204,27 @@ local function transcribe(recordingPath, model)
       return fail("Missing Whisper model " .. path .. ". Run the dotfiles install. " .. retryHint)
     end
   end
-  transcriber = hs.task.new(whisper, function(exitCode, stdout, stderr)
+  -- With a streaming callback, hs.task gives the exit callback no output and can deliver the last chunk
+  -- after it, so the transcript is read from the file Whisper writes instead.
+  local transcriptBase = recordingPath:gsub("%.wav$", "")
+  local transcriptPath = transcriptBase .. ".txt"
+  local stderr = ""
+  transcriber = hs.task.new(whisper, function(exitCode)
     transcriber = nil
+    endStatus()
+    local transcript = readFile(transcriptPath)
+    os.remove(transcriptPath)
     if exitCode ~= 0 then
       return fail("Transcription failed: " .. stderr:sub(-300) .. "\n" .. retryHint)
     end
-    onTranscribed(recordingPath, stdout, stderr)
-  end, whisperArguments(recordingPath, model))
+    onTranscribed(recordingPath, transcript, stderr)
+  end, function(_, _, stderrChunk)
+    stderr = stderr .. stderrChunk
+    updateStatus(stderrChunk)
+    return true
+  end, whisperArguments(recordingPath, model, transcriptBase))
   transcriber:start()
-  hs.alert.show("Transcribing…")
+  startStatus()
 end
 
 local function transcribeIfMemoryAllows(recordingPath)
