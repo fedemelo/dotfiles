@@ -50,18 +50,6 @@
     "continue.enableTabAutocomplete": false,
     "claudeCode.preferredLocation": "panel",
 
-    "sonarlint.connectedMode.connections.sonarcloud": [
-        {
-            "organizationKey": "",
-            "connectionId": "fedemelo"
-        }
-    ],
-    "sonarlint.rules": {
-        "typescript:S3863": {
-            "level": "on"
-        }
-    },
-
     "cSpell.language": "en,es-ES",
     "cSpell.userWords": [
         "almacernarse",
