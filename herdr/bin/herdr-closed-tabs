@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Usage: herdr-closed-tabs close|reopen
+# close closes the focused tab and remembers its workspace, label and directory; reopen opens a
+# tab like the last one closed. Herdr kills a closed tab's processes, so only those come back.
+set -euo pipefail
+# Herdr runs shell commands without the login shell's PATH.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+closed="${XDG_STATE_HOME:-$HOME/.local/state}/herdr/closed-tabs"
+
+close() {
+  local tab workspace label cwd
+  IFS=$'\t' read -r tab workspace label < <(herdr tab list |
+    jq -r '.result.tabs[] | select(.focused) | [.tab_id, .workspace_id, .label] | @tsv')
+  [ -n "$tab" ] || exit 1
+  cwd="$(herdr pane list | jq -r --arg tab "$tab" \
+    '.result.panes[] | select(.tab_id == $tab and .focused) | .foreground_cwd // .cwd')"
+  mkdir -p "$(dirname "$closed")"
+  printf '%s\t%s\t%s\n' "$workspace" "$label" "$cwd" >> "$closed"
+  herdr tab close "$tab" >/dev/null
+}
+
+reopen() {
+  [ -s "$closed" ] || exit 0
+  local workspace label cwd args=(--focus)
+  IFS=$'\t' read -r workspace label cwd < <(tail -n 1 "$closed")
+  sed -i '' '$d' "$closed"
+  # Herdr names unlabelled tabs by number, and a fixed number would go stale as tabs move.
+  case "$label" in *[!0-9]*) args+=(--label "$label") ;; esac
+  [ -d "$cwd" ] && args+=(--cwd "$cwd")
+  if herdr workspace get "$workspace" >/dev/null 2>&1; then
+    args+=(--workspace "$workspace")
+  fi
+  herdr tab create "${args[@]}" >/dev/null
+}
+
+case "${1:-}" in
+  close) close ;;
+  reopen) reopen ;;
+  *) echo "Usage: herdr-closed-tabs close|reopen" >&2; exit 2 ;;
+esac
