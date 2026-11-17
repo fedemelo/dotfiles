@@ -2,6 +2,8 @@ onboarding = false
 
 [keys]
 prefix = "ctrl+b"
+# Closing goes through herdr-closed-tabs, so prefix+t can reopen the tab.
+close_tab = ""
 
 [[keys.command]]
 key = "prefix+space"
@@ -9,6 +11,16 @@ type = "popup"
 command = "~/.local/bin/herdr-open"
 width = "90%"
 height = "90%"
+
+[[keys.command]]
+key = "prefix+shift+x"
+type = "shell"
+command = "~/.local/bin/herdr-closed-tabs close"
+
+[[keys.command]]
+key = "prefix+t"
+type = "shell"
+command = "~/.local/bin/herdr-closed-tabs reopen"
 
 [theme]
 name = "terminal"
