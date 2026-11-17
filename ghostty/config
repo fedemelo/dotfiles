@@ -5,6 +5,8 @@ theme = Retro Legends
 keybind = ctrl+tab=text:\x02n
 keybind = ctrl+shift+tab=text:\x02p
 
-# Likewise cmd+t and cmd+w open and close Herdr's tabs: prefix+c and prefix+shift+x.
+# Likewise cmd+t, cmd+w and cmd+shift+t open, close and reopen Herdr's tabs: prefix+c,
+# prefix+shift+x and prefix+t.
 keybind = cmd+t=text:\x02c
 keybind = cmd+w=text:\x02X
+keybind = cmd+shift+t=text:\x02t
