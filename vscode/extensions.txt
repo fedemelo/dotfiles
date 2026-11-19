@@ -22,13 +22,11 @@ haskell.haskell
 haskell.language-haskell
 hoovercj.haskell-linter
 inferrinizzard.prettier-sql-vscode
-james-yu.latex-workshop
 johnpapa.angular-essentials
 johnpapa.angular2
 johnpapa.vscode-peacock
 johnpapa.winteriscoming
 justusadam.language-haskell
-madhavd1.javadoc-tools
 mark-wiemer.vscode-autohotkey-plus-plus
 mathematic.vscode-latex
 mechatroner.rainbow-csv
@@ -55,10 +53,8 @@ ms-vscode-remote.remote-wsl
 ms-vscode.powershell
 ms-vscode.vscode-typescript-next
 njpwerner.autodocstring
-oracle.oracle-java
 pkief.material-icon-theme
 qwtel.sqlite-viewer
-redhat.java
 redhat.vscode-xml
 rioj7.command-variable
 ritwickdey.liveserver
@@ -68,12 +64,4 @@ streetsidesoftware.code-spell-checker-spanish
 svelte.svelte-vscode
 tomoki1207.pdf
 vadimcn.vscode-lldb
-vmware.vscode-spring-boot
-vscjava.vscode-gradle
-vscjava.vscode-java-debug
-vscjava.vscode-java-dependency
-vscjava.vscode-java-pack
-vscjava.vscode-java-test
-vscjava.vscode-lombok
-vscjava.vscode-maven
 waderyan.gitblame
