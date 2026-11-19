@@ -12,7 +12,7 @@ What it sets up:
 - [git-tools](https://github.com/fedemelo/git-tools): cloned or pulled into `~/code/personal`, then installed. It stays a separate repo.
 - Herdr as a mini IDE. `ctrl+b` `space` opens a search over files, nearest first. Enter opens the file in a pane on the right, `ctrl-o` in the popup. PDFs, Markdown and tables open in terminal viewers, anything else in VS Code.
 - Ghostty, the terminal to run Herdr in, since Terminal.app can't show its images.
-- VS Code settings, keybindings and a list of extensions. Turn off Settings Sync for Settings and Keybindings, or it overwrites them.
+- VS Code settings, keybindings and a list of extensions, some of them disabled except in the workspaces that need them. Turn off Settings Sync for Settings and Keybindings, or it overwrites them.
 - Dictation: ⌃⌥Space starts and stops recording, and a local Whisper model puts the text on the clipboard, and pastes it if a text field has focus. Words it should spell right go comma-separated in `hammerspoon/words.txt`. Dictations are logged in `~/Dictations`, with the audio of the last 50.
 
 It never installs programs. It lists the missing ones and how to install each.
