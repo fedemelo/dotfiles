@@ -65,7 +65,11 @@ Links `config.toml` into `~/.config/herdr/` and `bin/*` into `~/.local/bin`, the
 
 ### vscode
 
-Links `settings.json` and `keybindings.json` into `~/Library/Application Support/Code/User/`, then reports each extension in `extensions.txt` that `code --list-extensions` lacks. A setting changed in VS Code's UI, or a word added to the spell checker, lands in this repo through the link, so commit it.
+Links `settings.json` and `keybindings.json` into `~/Library/Application Support/Code/User/`, then reports each extension in `extensions.txt` that `code --list-extensions` lacks.
+
+Extensions in `disabled-extensions.txt` stay installed but are disabled for every workspace, and turned on with Enable (Workspace) only where needed, because each VS Code window runs its own copy of every enabled extension. These are ESLint, the spell checker and the Python tools. VS Code keeps this choice in its state database (`globalStorage/state.vscdb`, key `extensionsIdentifiers/disabled`), not in `settings.json`, so the installer reads it there and reports each listed extension that is still enabled. It doesn't write it, because VS Code overwrites that database from memory while it runs. Settings Sync carries the choice to other machines. Java and LaTeX Workshop were removed on purpose; don't add them back.
+
+A setting changed in VS Code's UI, or a word added to the spell checker, lands in this repo through the link, so commit it.
 
 VS Code's Settings Sync must not sync Settings or Keybindings, or it writes another machine's copy over these files. Extensions and UI state can keep syncing. The installer can't check this, because the choice lives in VS Code's state database.
 
