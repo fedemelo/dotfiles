@@ -20,7 +20,7 @@ local retryHint = "Recording kept. Press ⌃⌥⇧Space to transcribe it later."
 -- The values of kern.memorystatus_vm_pressure_level, which Activity Monitor shows as green, yellow and red.
 local pressure = { normal = 1, warning = 2 }
 
-local recorder, recording, stopping, transcriber
+local recorder, recording, stopping, discarding, transcriber
 local status = {}
 
 local function fail(message)
@@ -128,34 +128,55 @@ local function transcriptionText()
   return "Transcribing…"
 end
 
-local function stopButton(center, radius)
-  local iconSide = radius * 0.7
+local buttonRadius, buttonGap = 12, 8
+
+local function badgeButton(center, button)
   return {
     {
       type = "circle",
       action = "fill",
-      fillColor = { red = 0.85, green = 0.2, blue = 0.2 },
+      fillColor = button.color,
       center = center,
-      radius = radius,
-      id = "stop",
+      radius = buttonRadius,
+      id = button.glyph,
       trackMouseUp = true,
     },
     {
-      type = "rectangle",
-      action = "fill",
-      fillColor = { white = 1 },
-      frame = { x = center.x - iconSide / 2, y = center.y - iconSide / 2, w = iconSide, h = iconSide },
-      id = "stop",
+      type = "text",
+      text = button.glyph,
+      textColor = { white = 1 },
+      textSize = 15,
+      textAlignment = "center",
+      frame = { x = center.x - buttonRadius, y = center.y - 10, w = 2 * buttonRadius, h = 2 * buttonRadius },
+      id = button.glyph,
       trackMouseUp = true,
     },
   }
 end
 
-local function cornerBadge(text, onStop)
+local function buttonsWidth(buttons)
+  return #buttons * (2 * buttonRadius + buttonGap)
+end
+
+local function addBadgeButtons(badge, buttons, width, height)
+  local actions = {}
+  for i, button in ipairs(buttons) do
+    local x = width - buttonsWidth(buttons) + (i - 1) * (2 * buttonRadius + buttonGap) + buttonRadius
+    badge:appendElements(badgeButton({ x = x, y = height / 2 }, button))
+    actions[button.glyph] = button.action
+  end
+  badge:clickActivating(false)
+  badge:mouseCallback(function(_, event, id)
+    if event == "mouseUp" and actions[id] then
+      actions[id]()
+    end
+  end)
+end
+
+local function cornerBadge(text, buttons)
+  buttons = buttons or {}
   local screen = hs.screen.mainScreen():frame()
-  local width, height, margin = 210, 40, 20
-  local buttonRadius = 12
-  local textWidth = onStop and width - 2 * buttonRadius - 16 or width
+  local width, height, margin = 210 + buttonsWidth(buttons), 40, 20
   local badge = hs.canvas.new({
     x = screen.x + screen.w - width - margin,
     y = screen.y + screen.h - height - margin,
@@ -174,16 +195,10 @@ local function cornerBadge(text, onStop)
     textColor = { white = 1 },
     textSize = 18,
     textAlignment = "center",
-    frame = { x = 0, y = 8, w = textWidth, h = height - 8 },
+    frame = { x = 0, y = 8, w = width - buttonsWidth(buttons), h = height - 8 },
   }
-  if onStop then
-    badge:appendElements(stopButton({ x = width - buttonRadius - 12, y = height / 2 }, buttonRadius))
-    badge:clickActivating(false)
-    badge:mouseCallback(function(_, event, id)
-      if event == "mouseUp" and id == "stop" then
-        onStop()
-      end
-    end)
+  if #buttons > 0 then
+    addBadgeButtons(badge, buttons, width - buttonGap, height)
   end
   badge:level(hs.canvas.windowLevels.overlay)
   badge:behavior(hs.canvas.windowBehaviors.canJoinAllSpaces)
@@ -285,6 +300,10 @@ end
 local function onRecorderExit(exitCode)
   recorder = nil
   endStatus()
+  if discarding then
+    os.remove(recording)
+    return hs.alert.show("Recording discarded")
+  end
   if not stopping then
     if exitCode ~= 0 then
       return fail("Recording stopped unexpectedly. Check that Hammerspoon has microphone access.")
@@ -302,10 +321,35 @@ local function stopRecording()
   recorder:terminate()
 end
 
+-- The safe choice comes first so that Return keeps the recording.
+local function discardRecording()
+  local choice = hs.dialog.blockAlert(
+    "Discard this recording?",
+    "The audio will be deleted and not transcribed.",
+    "Keep recording",
+    "Discard",
+    "warning"
+  )
+  if choice ~= "Discard" then
+    return
+  end
+  if not recorder or stopping then
+    return hs.alert.show("The recording already ended, so it was not discarded")
+  end
+  discarding = true
+  stopRecording()
+end
+
+local recordingButtons = {
+  { glyph = "✓", color = { red = 0.2, green = 0.6, blue = 0.3 }, action = stopRecording },
+  { glyph = "✕", color = { red = 0.75, green = 0.2, blue = 0.2 }, action = discardRecording },
+}
+
 local function startRecording()
   hs.fs.mkdir(recordingsDir)
   recording = recordingsDir .. "/" .. os.date("%Y-%m-%d_%H-%M-%S") .. ".wav"
   stopping = false
+  discarding = false
   recorder = hs.task.new(rec, onRecorderExit,
     { "-q", "-c", "1", "-r", "16000", "-b", "16", recording, "trim", "0", tostring(maxRecordingSeconds) })
   if not recorder:start() then
@@ -313,7 +357,7 @@ local function startRecording()
     return fail("Could not start recording. Run the dotfiles install to check for sox.")
   end
   startStatus("Recording…", function()
-    return cornerBadge("Recording…", stopRecording)
+    return cornerBadge("Recording…", recordingButtons)
   end)
 end
 
