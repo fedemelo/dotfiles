@@ -11,16 +11,10 @@ report_missing \
   "rec:brew install sox" \
   "whisper-cli:brew install whisper.cpp"
 
-model_url() {
-  case "$1" in
-    ggml-silero-*) echo "https://huggingface.co/ggml-org/whisper-vad/resolve/main/$1" ;;
-    *) echo "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$1" ;;
-  esac
-}
-
-for model in $(grep -oE '/[^"]*ggml-[^"]*\.bin' "$dir/dictation.lua"); do
-  path="$HOME$model"
-  [ -f "$path" ] || echo "Missing: $path (curl -fL --create-dirs -o $path $(model_url "${model##*/}"))"
+models_dir="$HOME$(sed -n 's|^local modelsDir = home \.\. "\(.*\)"$|\1|p' "$dir/dictation.lua")"
+for url in $(grep -oE 'https://[^"]+\.bin' "$dir/dictation.lua"); do
+  path="$models_dir/${url##*/}"
+  [ -f "$path" ] || echo "Missing: $path (curl -fL --create-dirs -o $path $url)"
 done
 
 # Its first launch registers it to start at login. After that it reloads itself when its Lua changes.

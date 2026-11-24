@@ -5,12 +5,17 @@ local logPath = recordingsDir .. "/log.tsv"
 -- said just before the recording, so a sentence naming the topic pulls ambiguous words toward it.
 local topicPath = home .. "/.config/dictation/topic.txt"
 local vocabularyPath = home .. "/.config/dictation/words.txt"
+local modelsDir = home .. "/.local/share/whisper"
+local function whisperModel(url)
+  return { url = url, path = modelsDir .. "/" .. url:match("[^/]+$") }
+end
+-- install.sh reads these URLs to report the models that are missing.
 local models = {
-  large = home .. "/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin",
-  small = home .. "/.local/share/whisper/ggml-small-q5_1.bin",
+  large = whisperModel("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"),
+  small = whisperModel("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin"),
 }
 -- Without voice activity detection, Whisper invents text for silence ("Thanks for watching").
-local vadModel = home .. "/.local/share/whisper/ggml-silero-v5.1.2.bin"
+local vadModel = whisperModel("https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v5.1.2.bin")
 local rec = "/opt/homebrew/bin/rec"
 local whisper = "/opt/homebrew/bin/whisper-cli"
 local maxRecordingSeconds = 300
@@ -93,7 +98,7 @@ local function pruneTranscribedRecordings()
 end
 
 local function whisperArguments(recordingPath, model, transcriptBase)
-  local arguments = { "-m", model, "--vad", "-vm", vadModel, "-f", recordingPath, "-l", "auto", "-pp", "-otxt", "-of",
+  local arguments = { "-m", model.path, "--vad", "-vm", vadModel.path, "-f", recordingPath, "-l", "auto", "-pp", "-otxt", "-of",
     transcriptBase }
   local prompt = collapseWhitespace(readFile(topicPath) .. " " .. readFile(vocabularyPath))
   if prompt ~= "" then
@@ -249,9 +254,11 @@ local function onTranscribed(recordingPath, transcript, stderr)
 end
 
 local function transcribe(recordingPath, model)
-  for _, path in ipairs({ model, vadModel }) do
-    if not hs.fs.attributes(path) then
-      return fail("Missing Whisper model " .. path .. ". Run the dotfiles install. " .. retryHint)
+  for _, required in ipairs({ model, vadModel }) do
+    if not hs.fs.attributes(required.path) then
+      hs.pasteboard.setContents(string.format("curl -fL --create-dirs -o '%s' '%s'", required.path, required.url))
+      return fail("Missing Whisper model " .. required.path .. ". The command that downloads it is on the clipboard. "
+        .. retryHint)
     end
   end
   -- With a streaming callback, hs.task gives the exit callback no output and can deliver the last chunk
@@ -357,7 +364,7 @@ local function startRecording()
     { "-q", "-c", "1", "-r", "16000", "-b", "16", recording, "trim", "0", tostring(maxRecordingSeconds) })
   if not recorder:start() then
     recorder = nil
-    return fail("Could not start recording. Run the dotfiles install to check for sox.")
+    return fail("Could not start recording. Install sox with: brew install sox")
   end
   startStatus("Recording…", function()
     return cornerBadge("Recording…", recordingButtons)
