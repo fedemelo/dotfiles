@@ -1,6 +1,9 @@
 local home = os.getenv("HOME")
 local recordingsDir = home .. "/Dictations"
 local logPath = recordingsDir .. "/log.tsv"
+-- Per machine and outside the repo, so each user writes their own. Whisper reads the prompt as text
+-- said just before the recording, so a sentence naming the topic pulls ambiguous words toward it.
+local topicPath = home .. "/.config/dictation/topic.txt"
 local vocabularyPath = home .. "/.config/dictation/words.txt"
 local models = {
   large = home .. "/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin",
@@ -92,10 +95,10 @@ end
 local function whisperArguments(recordingPath, model, transcriptBase)
   local arguments = { "-m", model, "--vad", "-vm", vadModel, "-f", recordingPath, "-l", "auto", "-pp", "-otxt", "-of",
     transcriptBase }
-  local vocabulary = collapseWhitespace(readFile(vocabularyPath))
-  if vocabulary ~= "" then
+  local prompt = collapseWhitespace(readFile(topicPath) .. " " .. readFile(vocabularyPath))
+  if prompt ~= "" then
     table.insert(arguments, "--prompt")
-    table.insert(arguments, vocabulary)
+    table.insert(arguments, prompt)
   end
   return arguments
 end
