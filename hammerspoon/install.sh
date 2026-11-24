@@ -6,7 +6,6 @@ dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 link "$dir/init.lua" "$HOME/.hammerspoon/init.lua"
 link "$dir/dictation.lua" "$HOME/.hammerspoon/dictation.lua"
-link "$dir/words.txt" "$HOME/.config/dictation/words.txt"
 report_missing \
   "hs:brew install --cask hammerspoon" \
   "rec:brew install sox" \
